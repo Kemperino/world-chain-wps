@@ -24,8 +24,8 @@ prototype behavior.
 
 | Constant | Value | Meaning |
 | --- | ---: | --- |
-| `PRIVATE_TX_TYPE_V1` | `0x01` | Typed private transaction prefix |
-| `ENVELOPE_TYPE_V1` | `0x01` | Typed encrypted-envelope prefix |
+| `PRIVATE_TX_TYPE_V1` | `0x01` | Inner private transaction format version |
+| `ENVELOPE_TYPE_V1` | `0x01` | Public encrypted-envelope format version |
 | `PRIVATE_TX_GAS_LIMIT_V1` | `100000` | Only accepted private gas limit in version 1 |
 | `MAX_PRIVATE_CALLDATA_BYTES` | `4096` | Maximum plaintext transaction calldata |
 | `MAX_PRIVATE_TX_BYTES` | `8192` | Maximum encoded signed private transaction |
@@ -39,11 +39,15 @@ fit these format-level limits and MUST add no more than 64 bytes of ciphertext o
 
 ## Encoding rules
 
-Both wire formats use an EIP-2718-style one-byte type prefix followed by one canonical RLP list:
+Both wire formats use an EIP-2718-style one-byte version prefix followed by one canonical RLP list:
 
 ```text
-typed_payload = type_byte || rlp(list)
+versioned_payload = version_prefix || rlp(list)
 ```
+
+These prefixes version privacy payloads only. They are not new public Ethereum transaction types:
+the outer submission remains an ordinary World Chain transaction that passes the encrypted envelope
+as calldata to the Privacy Inbox.
 
 All implementations MUST apply the following rules:
 
@@ -52,10 +56,10 @@ All implementations MUST apply the following rules:
 - fixed byte strings have the exact lengths specified below;
 - lists contain exactly the specified number of fields in the specified order;
 - nested lists, non-canonical encodings, integer overflow, and trailing bytes are invalid;
-- byte limits apply to the complete typed payload, including the type byte and RLP framing; and
+- byte limits apply to the complete versioned payload, including the prefix byte and RLP framing; and
 - hashes use Keccak-256.
 
-The type byte is the format version. It is not also included as an RLP field.
+The prefix byte is the format version. It is not also included as an RLP field.
 
 ## Signed private transaction
 
@@ -273,8 +277,8 @@ receipts.
 The Privacy Inbox validates only public envelope properties, in this order:
 
 1. Reject an empty input or input larger than `MAX_ENVELOPE_BYTES`.
-2. Read the type byte. Reject any value other than `ENVELOPE_TYPE_V1` without attempting to decode
-   a version 1 body.
+2. Read the envelope version prefix. Reject any value other than `ENVELOPE_TYPE_V1` without
+   attempting to decode a version 1 body.
 3. Decode one canonical RLP list and reject malformed fields, incorrect field counts, invalid integer
    encodings, incorrect fixed lengths, empty variable fields, or trailing bytes.
 4. Enforce the encapsulated-key and ciphertext size limits.
@@ -286,7 +290,7 @@ These failures revert the outer inbox call with a stable category:
 | Category | Meaning |
 | --- | --- |
 | `EnvelopeSize` | Empty or oversized complete envelope or bounded field |
-| `UnsupportedEnvelopeVersion` | Unknown envelope type byte |
+| `UnsupportedEnvelopeVersion` | Unknown envelope version prefix |
 | `MalformedEnvelope` | Non-canonical or structurally invalid version 1 body |
 | `UnsupportedSuite` | Unknown or disabled crypto-suite ID |
 | `UnknownEncryptionKey` | Unknown, inactive, or inconsistent epoch/key/suite tuple |
@@ -303,7 +307,8 @@ The privacy service processes an accepted envelope in this order:
 1. Revalidate the canonical envelope and active key tuple from the source block.
 2. Reconstruct `info` and `aad_v1`, then perform HPKE open.
 3. Enforce `MAX_PRIVATE_TX_BYTES` before decoding plaintext.
-4. Read the private transaction type byte and reject an unknown version without version 1 decoding.
+4. Read the inner private transaction version prefix and reject an unknown version without version 1
+   decoding.
 5. Decode canonical version 1 RLP and validate field widths and limits.
 6. Require the configured pEVM chain ID and `PRIVATE_TX_GAS_LIMIT_V1`.
 7. Recompute `signing_hash`, recover the sender, and enforce canonical low-`s` signature rules.
