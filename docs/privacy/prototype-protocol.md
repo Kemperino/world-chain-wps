@@ -58,7 +58,9 @@ The following invariants apply to every prototype implementation:
 9. **Domain-separated keys.** Transaction encryption, state-root encryption, and persistence
    encryption use separate keys derived from `MSK`.
 10. **Encrypted public commitment.** The public system contract stores an encrypted private state
-    root and its public transition metadata. It MUST NOT receive the plaintext private state root.
+    root and its public transition metadata. It MUST NOT receive the plaintext private state root,
+    and the encrypted form MUST NOT reveal whether the plaintext root changed from an earlier
+    private transition.
 11. **No TEE requirement.** Prototype private execution and persistence run outside a TEE. TEE
     execution, attestation, dealer or DKG ceremonies, and ZK adjudication are deferred.
 12. **Private validation before private progress.** After observing privacy inputs in `N`, a privacy
@@ -89,6 +91,8 @@ enclaves.
 
 The Privacy Inbox is a public system contract or precompile at a protocol-defined address. A user or
 relayer submits an encrypted signed private transaction through an ordinary L2 transaction.
+The normative inner transaction and public envelope formats are defined in
+[`private-transaction-envelope.md`](private-transaction-envelope.md).
 
 The inbox MAY validate only public information, including:
 
@@ -221,8 +225,18 @@ construction and restart recovery, but it is not yet the canonical private head.
 
 The executor derives the state-root encryption key from `MSK` using a domain-separated derivation
 bound to source block `N`, not commitment block `N+1`. It encrypts the plaintext private state root
-with a fresh nonce and authenticated context that includes the algorithm version, chain, key epoch,
-private STF version, and source block context.
+with a nonce derived from the private transition identity and authenticated context that includes
+the algorithm version, chain, key epoch, private STF version, and source block context.
+
+The root-encryption nonce MUST be independent of the plaintext private state root and any
+state-change flag. The prototype nonce derivation SHOULD bind at least the chain ID, key epoch,
+private STF version, private transition index, source L2 block number, source L2 block hash, and
+parent private transition commitment. Binding only the pEVM block number or source L2 height is
+insufficient because a reorganization can reuse the same height for a different branch.
+
+Equal plaintext private roots in different private transitions MUST produce unlinkable public
+ciphertexts. Public observers therefore cannot infer whether a transition changed private state by
+comparing encrypted private roots.
 
 The public commitment contains the resulting ciphertext, authentication tag, nonce, and public
 transition metadata. The plaintext private state root remains inside the private service boundary.
@@ -244,8 +258,9 @@ After observing canonical block `N+1`, a privacy verifier:
 2. Requires zero commitments for `N` if it contained none, otherwise exactly one.
 3. Compares the source block, parent transition, input commitment, receipt commitment, key epoch,
    and STF version with its independently computed transition.
-4. Derives the same per-source-block root key and re-encrypts its computed plaintext root using the
-   transmitted nonce and authenticated context.
+4. Derives the same per-source-block root key and root-encryption nonce, rejects any commitment
+   whose transmitted nonce does not match the transition identity, and re-encrypts its computed
+   plaintext root using the authenticated context.
 5. Marks the private commitment verified only if the ciphertext and authentication tag match.
 6. Promotes the pending private transition only after all checks pass.
 
