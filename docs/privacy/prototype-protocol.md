@@ -89,6 +89,8 @@ enclaves.
 
 The Privacy Inbox is a public system contract or precompile at a protocol-defined address. A user or
 relayer submits an encrypted signed private transaction through an ordinary L2 transaction.
+The normative inner transaction and public envelope formats are defined in
+[`private-transaction-envelope.md`](private-transaction-envelope.md).
 
 The inbox MAY validate only public information, including:
 
