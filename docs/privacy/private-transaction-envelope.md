@@ -33,8 +33,9 @@ prototype behavior.
 | `MAX_CIPHERTEXT_BYTES` | `8256` | Maximum HPKE ciphertext, including authentication tag |
 | `MAX_ENVELOPE_BYTES` | `16384` | Maximum encoded envelope passed to the Privacy Inbox |
 
-The concrete version 1 HPKE, KDF, and AEAD suite is assigned by M0.4. Every supported suite MUST
-fit these format-level limits and MUST add no more than 64 bytes of ciphertext overhead to an
+The concrete version 1 HPKE, KDF, and AEAD suite is assigned by
+[`prototype-cryptography.md`](prototype-cryptography.md). Every supported suite MUST fit these
+format-level limits and MUST add no more than 64 bytes of ciphertext overhead to an
 `MAX_PRIVATE_TX_BYTES` plaintext.
 
 ## Encoding rules
@@ -209,8 +210,9 @@ transaction identity.
 
 ### Authenticated encryption context
 
-The HPKE plaintext is exactly `private_tx_v1`. Version 1 uses HPKE Base mode. M0.4 assigns the
-algorithm tuple behind `suite_id`; this document fixes the protocol context supplied to that suite.
+The HPKE plaintext is exactly `private_tx_v1`. Version 1 uses HPKE Base mode. The M0.4
+cryptographic suite document assigns the algorithm tuple behind `suite_id`; this document fixes the
+protocol context supplied to that suite.
 
 The HPKE `info` byte string is:
 
@@ -338,32 +340,35 @@ execution-level failures are specified in M0.3 and M1.6.
 This ticket specifies formats and validation behavior only. It does not implement signing,
 encryption, decryption, or contract parsing.
 
-- M0.4 selects the concrete HPKE, KDF, and AEAD implementation for each `suite_id` and publishes
-  cryptographic test vectors.
+- [`prototype-cryptography.md`](prototype-cryptography.md) selects the concrete HPKE, KDF, and AEAD
+  implementation for each `suite_id` and publishes cryptographic test vectors.
 - M1.2 implements the Privacy Inbox's public parser and metadata checks.
 - M1.3 implements signing, sender recovery, encryption, decryption, and submission utilities.
 - M1.6 implements private nonce, balance, intrinsic gas, destination, value, and execution checks.
 
 ## Dependencies
 
-M0.1 is satisfied by [`prototype-protocol.md`](prototype-protocol.md). M0.3 and M1 implementation
-work MUST consume this specification rather than defining competing transaction or envelope
-encodings.
+M0.1 is satisfied by [`prototype-protocol.md`](prototype-protocol.md). M0.3 is satisfied by
+[`private-transition-commitment.md`](private-transition-commitment.md). M1 implementation work MUST
+consume this specification rather than defining competing transaction or envelope encodings.
 
 ## Out of scope
 
 - implementation of signing, sender recovery, encryption, or decryption utilities, which belongs to
   M1.3;
 - selection and implementation of the concrete version 1 cryptographic suite, which belongs to
-  M0.4;
+  [`prototype-cryptography.md`](prototype-cryptography.md);
 - runtime key rotation, epoch activation rules, key expiry, historical-key recovery, and dealer or
   DKG-based key management;
 - private contract deployment and execution semantics; and
-- private receipt and transition commitment formats, which belong to M0.3.
+- private receipt and transition commitment formats, which belong to
+  [`private-transition-commitment.md`](private-transition-commitment.md).
 
 ## References
 
 - [Prototype protocol](prototype-protocol.md)
+- [Private transition and commitment format](private-transition-commitment.md)
+- [Prototype cryptographic suites](prototype-cryptography.md)
 - [Arc Privacy Sector paper](https://6778953.fs1.hubspotusercontent-na1.net/hubfs/6778953/PDFs/Whitepapers/Arc_Privacy_Sector%20(5).pdf)
 - [EIP-712: Typed structured data hashing and signing](https://eips.ethereum.org/EIPS/eip-712)
 - [EIP-2718: Typed transaction envelope](https://eips.ethereum.org/EIPS/eip-2718)

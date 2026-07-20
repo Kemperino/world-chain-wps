@@ -213,7 +213,8 @@ sealed private transition. It produces a transition that conceptually binds:
 - plaintext private post-state root;
 - key epoch and private STF version.
 
-The exact serialization and hashing rules are defined by the private-transition format specification.
+The exact serialization and hashing rules are defined by the
+[`private-transition-commitment.md`](private-transition-commitment.md) format specification.
 
 Invalid semantic private transactions, such as an unfunded transfer, produce failed private receipts
 and no state mutation. They do not invalidate block `N` or the private batch as a whole.
@@ -223,10 +224,11 @@ construction and restart recovery, but it is not yet the canonical private head.
 
 ### 4. Root encryption
 
-The executor derives the state-root encryption key from `MSK` using a domain-separated derivation
-bound to source block `N`, not commitment block `N+1`. It encrypts the plaintext private state root
-with a nonce derived from the private transition identity and authenticated context that includes
-the algorithm version, chain, key epoch, private STF version, and source block context.
+The executor derives the state-root encryption key from `MSK` using the
+[`prototype-cryptography.md`](prototype-cryptography.md) domain-separated derivation bound to
+source block `N`, not commitment block `N+1`. It encrypts the plaintext private state root with a
+nonce derived from the private transition identity and authenticated context that includes the
+algorithm version, chain, key epoch, private STF version, and source block context.
 
 The root-encryption nonce MUST be independent of the plaintext private state root and any
 state-change flag. The prototype nonce derivation SHOULD bind at least the chain ID, key epoch,
@@ -308,8 +310,8 @@ in the first prototype, and the trusted assumption must be visible in the implem
 
 ## Key hierarchy
 
-The prototype loads one fixed 32-byte development `MSK`. All derived keys use versioned,
-domain-separated derivations:
+The prototype loads one fixed 32-byte development `MSK`. All derived keys use the versioned,
+domain-separated derivations in [`prototype-cryptography.md`](prototype-cryptography.md):
 
 | Derived material | Scope | Prototype use |
 | --- | --- | --- |
